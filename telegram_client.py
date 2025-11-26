@@ -7,8 +7,8 @@ load_dotenv()
 
 class TelegramPoster:
     def __init__(self):
-        self.token = os.getenv('TELEGRAM_BOT_TOKEN')
-        self.channel_id = os.getenv('TELEGRAM_CHANNEL_ID')
+        self.token = os.getenv('BOT_TOKEN')
+        self.channel_id = os.getenv('CHANNEL_ID')
         self.bot = Bot(token=self.token)
 
     async def post_tweet(self, text, image_url):
