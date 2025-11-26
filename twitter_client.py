@@ -1,0 +1,104 @@
+import asyncio
+from playwright.async_api import async_playwright
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class TwitterScraper:
+    def __init__(self):
+        self.username = os.getenv('TWITTER_USER')
+        self.url = f"https://x.com/{self.username}"
+
+    async def fetch_latest_tweets(self):
+        """
+        Scrapes the latest tweets from the user's profile.
+        Returns a list of dictionaries containing tweet data.
+        """
+        tweets_data = []
+        
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            )
+            page = await context.new_page()
+
+            try:
+                print(f"Navigating to {self.url}...")
+                await page.goto(self.url, timeout=60000)
+                
+                # Wait for tweets to load
+                await page.wait_for_selector('article[data-testid="tweet"]', timeout=30000)
+                
+                # Scroll down to load more tweets
+                for _ in range(3):
+                    await page.mouse.wheel(0, 1000)
+                    await asyncio.sleep(2)
+
+                # Get all tweet elements
+                tweets = await page.locator('article[data-testid="tweet"]').all()
+                
+                print(f"Found {len(tweets)} tweets. Parsing...")
+
+                for tweet in tweets[:10]: # Check top 10 tweets
+                    try:
+                        # Extract Text
+                        text_element = tweet.locator('div[data-testid="tweetText"]')
+                        text = await text_element.inner_text() if await text_element.count() > 0 else ""
+                        
+                        # Extract ID (from the time element link)
+                        time_element = tweet.locator('time')
+                        timestamp = await time_element.get_attribute('datetime') if await time_element.count() > 0 else ""
+                        # Construct a pseudo-ID from timestamp or find the status link
+                        # Ideally we find the link: /username/status/123456...
+                        link_element = tweet.locator('a[href*="/status/"]').first
+                        href = await link_element.get_attribute('href') if await link_element.count() > 0 else ""
+                        tweet_id = href.split('/')[-1] if href else timestamp
+
+                        # Check for Images
+                        photo_elements = tweet.locator('div[data-testid="tweetPhoto"] img')
+                        photos = []
+                        count = await photo_elements.count()
+                        for i in range(count):
+                            src = await photo_elements.nth(i).get_attribute('src')
+                            if src:
+                                photos.append(src)
+                        
+                        has_image = len(photos) > 0
+                        image_url = photos[0] if has_image else None
+
+                        # Check for Video
+                        video_element = tweet.locator('div[data-testid="videoPlayer"]')
+                        is_video = await video_element.count() > 0
+
+                        # Check for Ad (Promoted)
+                        # Ads usually have a "Promoted" text at the bottom, but on profile pages it's rare.
+                        # We can check for the "Ad" label if it exists.
+                        
+                        tweets_data.append({
+                            'id': tweet_id,
+                            'text': text,
+                            'has_image': has_image,
+                            'image_url': image_url,
+                            'is_video': is_video,
+                            'is_video': is_video,
+                            'is_ad': False, # Placeholder, hard to detect reliably without specific selector
+                            'timestamp': timestamp
+                        })
+                    except Exception as e:
+                        print(f"Error parsing tweet: {e}")
+                        continue
+
+            except Exception as e:
+                print(f"Error scraping Twitter: {e}")
+            finally:
+                await browser.close()
+        
+        return tweets_data
+
+# Test
+if __name__ == "__main__":
+    scraper = TwitterScraper()
+    # tweets = asyncio.run(scraper.fetch_latest_tweets())
+    # print(tweets)
