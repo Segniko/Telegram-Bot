@@ -221,15 +221,6 @@ python -m playwright install
 - Check that secrets are properly configured
 - Verify the repository has Actions enabled
 
-## License
-
-MIT License - feel free to use and modify as needed.
-
 ## Contributing
 
 Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
-
-## Acknowledgments
-
-- Built with [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
-- Uses [Playwright](https://playwright.dev/) for web scraping
