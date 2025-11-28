@@ -13,10 +13,10 @@ A Python bot that automatically scrapes tweets from the Champions League Twitter
   - Must not contain external links
   - Must be less than 12 hours old
 
-- ⏰ **Automated Scheduling**: Runs every 15 minutes (configurable)
-- 📝 **Duplicate Prevention**: Tracks seen tweets to avoid reposting
-- 🌐 **Browser-based Scraping**: Uses Playwright for reliable Twitter scraping
-- ☁️ **Free Deployment**: Can be deployed on GitHub Actions at no cost
+- **Automated Scheduling**: Runs every 15 minutes (configurable)
+- **Duplicate Prevention**: Tracks seen tweets to avoid reposting
+- **Browser-based Scraping**: Uses Playwright for reliable Twitter scraping
+-  **Free Deployment**: Can be deployed on GitHub Actions at no cost
 
 ## Prerequisites
 
@@ -81,10 +81,7 @@ If you want to run the bot continuously on your local machine, you can modify `m
 
 ## Deployment
 
-### Option 1: GitHub Actions (Recommended - Free)
-
-GitHub Actions allows you to run the bot for free on a schedule.
-
+### GitHub Actions 
 1. **Push your code to GitHub** (without the `.env` file)
 
 2. **Add GitHub Secrets**:
@@ -138,39 +135,6 @@ jobs:
 ```
 
 4. **Enable Actions**: Go to the Actions tab in your repository and enable workflows.
-
-### Option 2: Oracle Cloud (Free VPS)
-
-Oracle Cloud offers a generous free tier with powerful VMs.
-
-1. Sign up for [Oracle Cloud Free Tier](https://www.oracle.com/cloud/free/)
-2. Create an Ubuntu VM
-3. SSH into the server and run:
-
-```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install Python and pip
-sudo apt install python3 python3-pip git -y
-
-# Clone your repository
-git clone https://github.com/Segniko/Telegram-Bot.git
-cd Telegram-Bot
-
-# Install dependencies
-pip3 install -r requirements.txt
-playwright install --with-deps chromium
-
-# Create .env file
-nano .env
-# (Add your environment variables)
-
-# Run the bot
-python3 main.py
-```
-
-To keep it running 24/7, create a systemd service (see `deployment_guide.md` for details).
 
 ## Project Structure
 
