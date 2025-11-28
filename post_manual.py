@@ -5,13 +5,16 @@ async def post_manual():
     poster = TelegramPoster()
     
     # Specific tweet details provided by user
-    # https://x.com/ChampionsLeague/status/1994073740481831048
-    # Since we can't scrape it easily without finding it in feed, 
-    # we can allow user to input text/image or hardcode it if they provide details.
-    # For now, I'll make it interactive.
     
     print("📝 Manual Telegram Poster")
-    text = input("Enter caption/text: ")
+    print("Enter caption/text (Type a single dot '.' on a line to finish):")
+    lines = []
+    while True:
+        line = input()
+        if line == ".":
+            break
+        lines.append(line)
+    text = "\n".join(lines)
     image_url = input("Enter image URL (or leave empty for text only): ")
     
     if not image_url:
