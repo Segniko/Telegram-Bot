@@ -2,39 +2,45 @@ name: Telegram Bot
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  # Runs every 15 minutes
-  workflow_dispatch:  # Allows manual trigger
+    - cron: '*/15 * * * *'  # Run every 15 minutes
+  workflow_dispatch:  # Allow manual trigger
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-    
+    - name: Checkout code
+      uses: actions/checkout@v3
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-    
+
     - name: Install dependencies
       run: |
+        python -m pip install --upgrade pip
         pip install -r requirements.txt
-        playwright install --with-deps chromium
-    
-    - name: Run bot
+        pip install playwright
+        playwright install chromium
+
+    - name: Restore Auth Session
       env:
-        TWITTER_USER: ${{ secrets.TWITTER_USER }}
+        TWITTER_AUTH: ${{ secrets.TWITTER_AUTH }}
+      run: |
+        echo "$TWITTER_AUTH" | base64 -d > auth.json
+
+    - name: Run Bot
+      env:
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
-      run: python main.py
-    
-    - name: Commit seen tweets
+        TWITTER_USER: ${{ secrets.TWITTER_USER }}
+      run: python main.py --once
+
+    - name: Commit State (Seen Tweets)
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add seen_tweets.json
-        git diff --quiet && git diff --staged --quiet || git commit -m "Update seen tweets [skip ci]"
-        git push
+        git config --global user.name 'GitHub Action Bot'
+        git config --global user.email 'action@github.com'
+        git add -f seen_tweets.json
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update seen tweets [skip ci]" && git push)

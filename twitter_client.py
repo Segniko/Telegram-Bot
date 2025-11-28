@@ -8,31 +8,76 @@ load_dotenv()
 class TwitterScraper:
     def __init__(self):
         self.username = os.getenv('TWITTER_USER')
-        self.url = f"https://x.com/{self.username}"
-
     async def fetch_latest_tweets(self):
         """
         Scrapes the latest tweets from the user's profile.
-        Returns a list of dictionaries containing tweet data.
+        Uses authenticated session if available to get accurate chronological results via Search.
         """
         tweets_data = []
         
+        # Use Search URL with f=live to get reverse chronological order
+        # This works reliably ONLY when authenticated
+        self.url = f"https://x.com/search?q=from%3A{self.username}&src=typed_query&f=live"
+        
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context(
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            # Check for auth file
+            auth_file = 'auth.json'
+            if os.path.exists(auth_file):
+                print(f"🔑 Loading authenticated session from {auth_file}...")
+                context_options = {'storage_state': auth_file}
+            else:
+                print("⚠️ No auth file found! Scraping will likely fail or show old tweets.")
+                print("   Run 'python login.py' to authenticate.")
+                context_options = {}
+
+            # Launch browser
+            browser = await p.chromium.launch(
+                headless=True,
+                args=[
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-dev-shm-usage',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-web-security',
+                ]
             )
+            
+            # Create context with auth if available
+            context = await browser.new_context(
+                **context_options,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={'width': 1920, 'height': 1080},
+                locale='en-US',
+                timezone_id='America/New_York',
+            )
+            
+            # Add extra headers
+            await context.set_extra_http_headers({
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            })
+            
             page = await context.new_page()
+            
+            # Remove webdriver property
+            await page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+            """)
 
             try:
                 print(f"Navigating to {self.url}...")
-                await page.goto(self.url, timeout=60000)
+                await page.goto(self.url, wait_until='domcontentloaded', timeout=90000)
                 
-                # Wait for tweets to load
-                await page.wait_for_selector('article[data-testid="tweet"]', timeout=30000)
+                # Wait a bit for dynamic content
+                await asyncio.sleep(3)
+                
+                # Wait for tweets to load with a longer timeout
+                await page.wait_for_selector('article[data-testid="tweet"]', timeout=45000)
                 
                 # Scroll down to load more tweets
-                for _ in range(3):
+                for _ in range(10):
                     await page.mouse.wheel(0, 1000)
                     await asyncio.sleep(2)
 
@@ -41,7 +86,7 @@ class TwitterScraper:
                 
                 print(f"Found {len(tweets)} tweets. Parsing...")
 
-                for tweet in tweets[:10]: # Check top 10 tweets
+                for tweet in tweets[:50]: # Check top 50 tweets
                     try:
                         # Extract Text
                         text_element = tweet.locator('div[data-testid="tweetText"]')

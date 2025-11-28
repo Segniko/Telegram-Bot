@@ -20,11 +20,16 @@ class TelegramPoster:
             await self.bot.send_photo(
                 chat_id=self.channel_id,
                 photo=image_url,
-                caption=text
+                caption=text,
+                read_timeout=30,
+                write_timeout=30,
+                connect_timeout=30
             )
             print("Successfully posted.")
+            return True
         except Exception as e:
             print(f"Error posting to Telegram: {e}")
+            return False
 
 # Test
 if __name__ == "__main__":

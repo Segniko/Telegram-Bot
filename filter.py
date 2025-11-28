@@ -36,7 +36,7 @@ def is_valid_tweet(tweet_data):
     if '#UCL' not in text:
         return False, "Missing #UCL hashtag"
 
-    # 4. Time Check (12 hours)
+    # 4. Time Check (48 hours)
     timestamp_str = tweet_data.get('timestamp')
     
     if not timestamp_str:
@@ -52,8 +52,8 @@ def is_valid_tweet(tweet_data):
         
         now = datetime.now(timezone.utc)
         
-        if now - tweet_time > timedelta(hours=12):
-            return False, "Older than 12 hours"
+        if now - tweet_time > timedelta(hours=1):
+            return False, "Older than 1 hour"
             
     except Exception as e:
         print(f"Error parsing timestamp {timestamp_str}: {e}")
