@@ -20,15 +20,31 @@ class TwitterScraper:
         self.url = f"https://x.com/search?q=from%3A{self.username}&src=typed_query&f=live"
         
         async with async_playwright() as p:
-            # Check for auth file
+            # Check for auth file and validate it contains valid JSON
             auth_file = 'auth.json'
+            context_options = {}
+            
             if os.path.exists(auth_file):
-                print(f"🔑 Loading authenticated session from {auth_file}...")
-                context_options = {'storage_state': auth_file}
+                try:
+                    # Validate that the file contains valid JSON
+                    import json
+                    with open(auth_file, 'r') as f:
+                        content = f.read().strip()
+                        if content:  # Check if file is not empty
+                            json.loads(content)  # Validate JSON
+                            print(f"🔑 Loading authenticated session from {auth_file}...")
+                            context_options = {'storage_state': auth_file}
+                        else:
+                            print("⚠️ Auth file is empty! Scraping will likely fail or show old tweets.")
+                            print("   Please check your TWITTER_AUTH secret in GitHub Actions.")
+                except json.JSONDecodeError as e:
+                    print(f"⚠️ Auth file contains invalid JSON: {e}")
+                    print("   Please regenerate auth.json by running 'python login.py' or check TWITTER_AUTH secret.")
+                except Exception as e:
+                    print(f"⚠️ Error reading auth file: {e}")
             else:
                 print("⚠️ No auth file found! Scraping will likely fail or show old tweets.")
                 print("   Run 'python login.py' to authenticate.")
-                context_options = {}
 
             # Launch browser
             browser = await p.chromium.launch(

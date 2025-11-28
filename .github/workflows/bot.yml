@@ -29,7 +29,18 @@ jobs:
       env:
         TWITTER_AUTH: ${{ secrets.TWITTER_AUTH }}
       run: |
-        echo "$TWITTER_AUTH" | base64 -d > auth.json
+        if [ -z "$TWITTER_AUTH" ]; then
+          echo "⚠️ TWITTER_AUTH secret is not set. Bot will run without authentication."
+          echo "   This may result in limited functionality or outdated tweet data."
+        else
+          echo "$TWITTER_AUTH" | base64 -d > auth.json
+          if [ ! -s auth.json ]; then
+            echo "⚠️ Failed to decode TWITTER_AUTH secret. Removing empty auth.json."
+            rm -f auth.json
+          else
+            echo "✅ Successfully restored authentication session."
+          fi
+        fi
 
     - name: Run Bot
       env:
