@@ -36,7 +36,7 @@ def is_valid_tweet(tweet_data):
     if '#UCL' not in text:
         return False, "Missing #UCL hashtag"
 
-    # 4. Time Check (48 hours)
+    # 4. Time Check (1 hour)
     timestamp_str = tweet_data.get('timestamp')
     
     if not timestamp_str:
